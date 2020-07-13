@@ -89,22 +89,22 @@ class DQNSolver:
 
 
 # determine reward of action
-# note: i think this get_reward method could use some improvement since many of the solutions
-# i've seen online work a lot faster than mine, so this is definitely not optimal
+# optimization required
 def get_reward(state):
     if state[0] >= 0.5:
         print("Car has reached checkpoint!")
-        return 10 # reward success
+        return 10  # reward success
     if state[0] > -0.4:
         # punish falling off the other edge
         return (1+state[0])**2
     return 0
 
+
 def mountaincar():
     # initialize game and score logger
     env = gym.make(ENV_NAME)
     # tool created to display 'score'
-    score_logger = ScoreLogger(ENV_NAME)
+    # score_logger = ScoreLogger(ENV_NAME)
     observation_space = env.observation_space.shape[0]
     action_space = env.action_space.n
     dqn_solver = DQNSolver(observation_space, action_space)
@@ -140,9 +140,10 @@ def mountaincar():
             state = state_next
             if dead:
                 # score = # of steps taken in a particular run (too many steps is bad)
-                print ("Run: " + str(run) + ", exploration: " + str(dqn_solver.exploration_rate) + ", score: " + str(step))
-                score_logger.add_score(step, run)
+                print("Run: " + str(run) + ", exploration: " + str(dqn_solver.exploration_rate) + ", score: " + str(step))
+                # score_logger.add_score(step, run)
                 break
             dqn_solver.replay()
+
 
 mountaincar()
