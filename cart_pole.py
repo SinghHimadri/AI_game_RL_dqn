@@ -1,4 +1,4 @@
-#region IMPORTS
+# region IMPORTS
 import random
 import gym
 import numpy as np
@@ -15,17 +15,19 @@ ENV_NAME = "CartPole-v1"
 
 # hyperparameters
 
-GAMMA = 0.95  # decay or discount rate, to calculate the future discounted reward
-LEARNING_RATE = 0.001  # Determines how much neural net learns in each iteration
+GAMMA = 0.95  # decay rate to calculate the future discounted reward
+LEARNING_RATE = 0.001  # neural net learns in each iteration
 
 MEMORY_SIZE = 1000000  # limits on RAM size to ensure this runs smoothly
-BATCH_SIZE = 20 # number of training examples used in oen iteration
+BATCH_SIZE = 20  # number of training examples used in oen iteration
 
 EXPLORATION_MAX = 1.0  # agent randomly decides its action rather than prediction
 EXPLORATION_MIN = 0.01  # agent to explores at least this amount
 EXPLORATION_DECAY = 0.995  # decrease the number of explorations as it gets good at playing games
 
-""" implementation of Deep Q Network algorithm (reinfocement learning) """
+
+# implementation of Deep Q Network algorithm (reinfocement learning)
+
 class DQNSolver:
 
     def __init__(self, observation_space, action_space):
@@ -47,10 +49,11 @@ class DQNSolver:
     def memorize(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done))
 
-
     # agent will randomly select its action at first by a certain percentage ‘exploration rate’
     # then agent will predict the reward value based on the current state and pick the action that will give the highest reward
+
     def act(self, state):
+
         if np.random.rand() < self.exploration_rate:
             # The agent acts randomly
             return random.randrange(self.action_space)
@@ -61,8 +64,8 @@ class DQNSolver:
         # Pick the action based on the predicted reward
         return np.argmax(q_values[0])
 
-
     def replay(self):
+
         if len(self.memory) < BATCH_SIZE:
             return
         # Sample batch from the memory
