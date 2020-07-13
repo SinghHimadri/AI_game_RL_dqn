@@ -21,9 +21,9 @@ LEARNING_RATE = 0.001  # neural net learns in each iteration
 MEMORY_SIZE = 1000000  # limits on RAM size to ensure this runs smoothly
 BATCH_SIZE = 20  # number of training examples used in oen iteration
 
-EXPLORATION_MAX = 1.0  # agent randomly decides its action rather than prediction
+EXPLORATION_MAX = 1.0  # agent randomly decides its action not predicting
 EXPLORATION_MIN = 0.01  # agent to explores at least this amount
-EXPLORATION_DECAY = 0.995  # decrease the number of explorations as it gets good at playing games
+EXPLORATION_DECAY = 0.995  # decrease explorations as model improves
 
 
 # implementation of Deep Q Network algorithm (reinfocement learning)
@@ -86,17 +86,18 @@ class DQNSolver:
         self.exploration_rate *= EXPLORATION_DECAY
         self.exploration_rate = max(EXPLORATION_MIN, self.exploration_rate)
 
+
 def cartpole():
     # initialize game and score logger
     env = gym.make(ENV_NAME)
     # tool created to display 'score'
-    score_logger = ScoreLogger(ENV_NAME)
+    # score_logger = ScoreLogger(ENV_NAME)
     observation_space = env.observation_space.shape[0]
     action_space = env.action_space.n
     dqn_solver = DQNSolver(observation_space, action_space)
     run = 0
 
-    # continue indefinitely to train and perfect the mdoel
+    # continue indefinitely to train and improve the mdoel
     while True:
         run += 1
         # a new frame
@@ -104,27 +105,34 @@ def cartpole():
         state = np.reshape(state, [1, observation_space])
         step = 0
 
-        # keep stepping til you fall out of frame
+        # keep stepping till the cart falls out of frame
         while True:
+
             # more steps = more successful (even if it is moving)
             step += 1
             env.render()
 
-            # choose what to do using DQN
+            # choose action
             action = dqn_solver.act(state)
-            # analyze what happened
+
+            # analyze
             state_next, reward, dead, info = env.step(action)
-            # reinforce positive outcome, penalize bad outcome
+
+            # reinforce positive outcome , penalize bad outcome
             reward = reward if not dead else -reward
             state_next = np.reshape(state_next, [1, observation_space])
+
             # memorize this iteration to shape the following
             dqn_solver.memorize(state, action, reward, state_next, dead)
             state = state_next
+
             if dead:
+
                 # score = # of steps taken in a particular run (too many steps is bad)
-                print ("Run: " + str(run) + ", exploration: " + str(dqn_solver.exploration_rate) + ", score: " + str(step))
-                score_logger.add_score(step, run)
+                print("Run: " + str(run) + ", exploration: " + str(dqn_solver.exploration_rate) + ", score: " + str(step))
+                # score_logger.add_score(step, run)
                 break
             dqn_solver.replay()
+
 
 cartpole()
