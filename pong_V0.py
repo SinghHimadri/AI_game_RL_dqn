@@ -42,17 +42,13 @@ def choose_action(probability):
         return 3
 
 
-# helper method to do the following:
-# 1. crop the imag down to what we care about
-# 2. downsample the image
-# 3. remove arbitrary details (color) from the image
 # 4. convert the image to a 6400x1 matrix for easier computation
 # 5. since we only care about what's changed between frames, only store the difference between this and the previous
 def preprocess_observations(input_observation, prev_processed_observation, input_dimensions):
     """ convert the 210x160x3 uint8 frame into a 6400 float vector """
     processed_observation = input_observation[35:195]
     processed_observation = downsample(processed_observation)
-    processed_observation = remove_color(processed_observation)
+    processed_observation = remove_color(processed_observation)  # 3. black and white image
     processed_observation = remove_background(processed_observation)
     processed_observation[processed_observation != 0] = 1  # everything else (paddles, ball) just set to 1
     # Convert from 80 x 80 matrix to 1600 x 1 matrix
@@ -69,9 +65,9 @@ def preprocess_observations(input_observation, prev_processed_observation, input
 
 
 # generate a probability of going up using a few steps:
-# 1. take dot product of the weights x observation matrix to determine the unprocessed hidden layer values (200x1 matrix of neurons)
+# 1. take dot product of the weights.observation matrix to determine the unprocessed hidden layer values (200x1 matrix of neurons)
 # 2. apply reLU on that hidden layer ('introduces the nonlinearities that makes our network capable of computing nonlinear functions rather than just simple linear ones')
-# 3. compute outer layer values by taking dot product of hidden layer x weights ['2']
+# 3. compute outer layer values by taking dot product of hidden layer(200X1) x weights ['2'](1X200)
 # 4. apply sigmoid function so the result (probability) is between 0 and 1
 def apply_neural_nets(observation_matrix, weights):
     """ Based on the observation_matrix and weights, compute the new hidden layer values and the new output layer values"""
@@ -90,10 +86,9 @@ def main():
     observation = env.reset()
 
     # hyperparameters
-    # some global variables to fine-tune the learning metrics
     episode_number = 0
-    batch_size = 10
-    gamma = 0.99 # discount factor for reward
+    batch_size = 10  # how many episodes to wait before moving the weights
+    gamma = 0.99  # discount factor for reward
     decay_rate = 0.99
     num_hidden_layer_neurons = 200
     input_dimensions = 80 * 80
@@ -105,12 +100,12 @@ def main():
     prev_processed_observations = None
 
     # weights to determine number of neurons and their relative importance
+    # initialize each layer’s weights with random numbers and normalize
     weights = {
         '1': np.random.randn(num_hidden_layer_neurons, input_dimensions) / np.sqrt(input_dimensions),
         '2': np.random.randn(num_hidden_layer_neurons) / np.sqrt(num_hidden_layer_neurons)
     }
 
-    # To be used with rmsprop algorithm (http://sebastianruder.com/optimizing-gradient-descent/index.html#rmsprop)
     expectation_g_squared = {}
     g_dict = {}
     for layer_name in weights.keys():
