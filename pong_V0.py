@@ -1,32 +1,35 @@
+# region IMPORTS
 import gym
 import numpy as np
+# region END
 
-""" Teaching an AI how to play Ping Pong """
-# Article: https://medium.com/@dhruvp/how-to-write-a-neural-network-to-play-pong-from-scratch-956b57d4f6e0
-# Code Source: https://github.com/dhruvp/atari-pong
 
-""" many helper methods """
 # helper methods for some math
 def sigmoid(x):
     return 1.0/(1.0 + np.exp(-x))
+
 
 def relu(vector):
     vector[vector < 0] = 0
     return vector
 
+
 # for preprocessing images
 def downsample(image):
-    # Take only alternate pixels - basically halves the resolution of the image (which is fine for us)
+    # Take only alternate pixels halves the resolution of the image
     return image[::2, ::2, :]
+
 
 # covnvert color (RGB is the third dimension in the image)
 def remove_color(image):
     return image[:, :, 0]
 
+
 def remove_background(image):
     image[image == 144] = 0
     image[image == 109] = 0
     return image
+
 
 # 'flip a coin' to choose what to do
 def choose_action(probability):
@@ -35,8 +38,9 @@ def choose_action(probability):
         # signifies up in openai gym
         return 2
     else:
-         # signifies down in openai gym
+        # signifies down in openai gym
         return 3
+
 
 # helper method to do the following:
 # 1. crop the imag down to what we care about
@@ -46,11 +50,11 @@ def choose_action(probability):
 # 5. since we only care about what's changed between frames, only store the difference between this and the previous
 def preprocess_observations(input_observation, prev_processed_observation, input_dimensions):
     """ convert the 210x160x3 uint8 frame into a 6400 float vector """
-    processed_observation = input_observation[35:195] # crop
+    processed_observation = input_observation[35:195]
     processed_observation = downsample(processed_observation)
     processed_observation = remove_color(processed_observation)
     processed_observation = remove_background(processed_observation)
-    processed_observation[processed_observation != 0] = 1 # everything else (paddles, ball) just set to 1
+    processed_observation[processed_observation != 0] = 1  # everything else (paddles, ball) just set to 1
     # Convert from 80 x 80 matrix to 1600 x 1 matrix
     processed_observation = processed_observation.astype(np.float).ravel()
 
