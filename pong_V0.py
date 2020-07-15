@@ -42,19 +42,17 @@ def choose_action(probability):
         return 3
 
 
-# 4. convert the image to a 6400x1 matrix for easier computation
-# 5. since we only care about what's changed between frames, only store the difference between this and the previous
 def preprocess_observations(input_observation, prev_processed_observation, input_dimensions):
     """ convert the 210x160x3 uint8 frame into a 6400 float vector """
     processed_observation = input_observation[35:195]
     processed_observation = downsample(processed_observation)
-    processed_observation = remove_color(processed_observation)  # 3. black and white image
-    processed_observation = remove_background(processed_observation)
+    processed_observation = remove_color(processed_observation)  # convert to black and white image
+    processed_observation = remove_background(processed_observation)  # convert image to 6400x1 matrix easier computation
     processed_observation[processed_observation != 0] = 1  # everything else (paddles, ball) just set to 1
     # Convert from 80 x 80 matrix to 1600 x 1 matrix
     processed_observation = processed_observation.astype(np.float).ravel()
-
     # subtract the previous frame from the current one so we are only processing on changes in the game
+    # we only care about what's changed between frames
     if prev_processed_observation is not None:
         input_observation = processed_observation - prev_processed_observation
     else:
@@ -76,6 +74,54 @@ def apply_neural_nets(observation_matrix, weights):
     output_layer_values = np.dot(hidden_layer_values, weights['2'])
     output_layer_values = sigmoid(output_layer_values)
     return hidden_layer_values, output_layer_values
+
+
+# compute gradient for backpropogation
+# my math is a bit rusty, so tbh i don't fully understand why these computations will work for us
+def compute_gradient(gradient_log_p, hidden_layer_values, observation_values, weights):
+    """ See here: http://neuralnetworksanddeeplearning.com/chap2.html"""
+    delta_L = gradient_log_p
+    dC_dw2 = np.dot(hidden_layer_values.T, delta_L).ravel()
+    delta_l2 = np.outer(delta_L, weights['2'])
+    delta_l2 = relu(delta_l2)
+    dC_dw1 = np.dot(delta_l2.T, observation_values)
+    return {
+        '1': dC_dw1,
+        '2': dC_dw2
+    }
+
+
+# apply RMSProp, an algorithm for updating weights
+def update_weights(weights, expectation_g_squared, g_dict, decay_rate, learning_rate):
+    """ See here: http://sebastianruder.com/optimizing-gradient-descent/index.html#rmsprop"""
+    epsilon = 1e-5
+    for layer_name in weights.keys():
+        g = g_dict[layer_name]
+        expectation_g_squared[layer_name] = decay_rate * expectation_g_squared[layer_name] + (1 - decay_rate) * g**2
+        weights[layer_name] += (learning_rate * g)/(np.sqrt(expectation_g_squared[layer_name] + epsilon))
+        g_dict[layer_name] = np.zeros_like(weights[layer_name]) # reset batch gradient buffer
+
+# actions taken later in the game carry more weight
+def discount_rewards(rewards, gamma):
+    """ Actions you took 20 steps before the end result are less important to the overall result than an action you took a step ago.
+    This implements that logic by discounting the reward on previous actions based on how long ago they were taken"""
+    discounted_rewards = np.zeros_like(rewards)
+    running_add = 0
+    for t in reversed(range(0, rewards.size)):
+        if rewards[t] != 0:
+            running_add = 0 # reset the sum, since this was a game boundary (pong specific!)
+        running_add = running_add * gamma + rewards[t]
+        discounted_rewards[t] = running_add
+    return discounted_rewards
+
+
+def discount_with_rewards(gradient_log_p, episode_rewards, gamma):
+    """ discount the gradient with the normalized rewards """
+    discounted_episode_rewards = discount_rewards(episode_rewards, gamma)
+    # standardize the rewards to be unit normal (helps control the gradient estimator variance)
+    discounted_episode_rewards -= np.mean(discounted_episode_rewards)
+    discounted_episode_rewards /= np.std(discounted_episode_rewards)
+    return gradient_log_p * discounted_episode_rewards
 
 
 def main():
