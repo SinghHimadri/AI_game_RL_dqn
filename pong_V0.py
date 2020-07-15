@@ -130,7 +130,7 @@ def discount_with_rewards(gradient_log_p, episode_rewards, gamma):
     return gradient_log_p * discounted_episode_rewards
 
 
-def main():
+def pingpong():
     # initialize ping pong game (atari style)
     env = gym.make("Pong-v0")
 
@@ -166,7 +166,8 @@ def main():
 
     episode_hidden_layer_values, episode_observations, episode_gradient_log_ps, episode_rewards = [], [], [], []
 
-    # infinite game loop (need to change) to run neural network and choose an action to take
+    # infinite game loop to run neural network and choose an action to take
+    # improvement required
     while True:
         env.render()
 
@@ -192,7 +193,6 @@ def main():
 
         # treat the action as the 'right' move to determine the derivative
         # the derivative reflects the answer to: 'How does changing the output probability (of going up) affect my result of winning the round?'
-        # see here: http://cs231n.github.io/neural-networks-2/#losses
         fake_label = 1 if action == 2 else 0
         loss_function_gradient = fake_label - up_probability
         # now we have a gradient per action
@@ -201,7 +201,7 @@ def main():
         # compute the 'policy gradient' to determine 'how' we learn
         # if we won, keep doing the same thing, otherwise, generate less of such actions that made us lose
 
-        if done: # an episode finished
+        if done:  # an episode finished
             episode_number += 1
             # once the round is done, compile all the observations and gradients
             episode_hidden_layer_values = np.vstack(episode_hidden_layer_values)
@@ -226,12 +226,13 @@ def main():
             if episode_number % batch_size == 0:
                 update_weights(weights, expectation_g_squared, g_dict, decay_rate, learning_rate)
 
-            episode_hidden_layer_values, episode_observations, episode_gradient_log_ps, episode_rewards = [], [], [], [] # reset values
-            observation = env.reset() # reset env
+            episode_hidden_layer_values, episode_observations, episode_gradient_log_ps, episode_rewards = [], [], [], []  # reset values
+            observation = env.reset()  # reset env
             running_reward = reward_sum if running_reward is None else running_reward * 0.99 + reward_sum * 0.01
-            print (f'resetting env. episode reward total was {reward_sum}. running mean: {running_reward}')
+            print(f'resetting env. episode reward total was {reward_sum}. running mean: {running_reward}')
             print(episode_number)
             reward_sum = 0
             prev_processed_observations = None
 
-main()
+
+pingpong()
