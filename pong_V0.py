@@ -187,3 +187,51 @@ def main():
 
         reward_sum += reward
         episode_rewards.append(reward)
+
+        # the 'learning' stage
+
+        # treat the action as the 'right' move to determine the derivative
+        # the derivative reflects the answer to: 'How does changing the output probability (of going up) affect my result of winning the round?'
+        # see here: http://cs231n.github.io/neural-networks-2/#losses
+        fake_label = 1 if action == 2 else 0
+        loss_function_gradient = fake_label - up_probability
+        # now we have a gradient per action
+        episode_gradient_log_ps.append(loss_function_gradient)
+
+        # compute the 'policy gradient' to determine 'how' we learn
+        # if we won, keep doing the same thing, otherwise, generate less of such actions that made us lose
+
+        if done: # an episode finished
+            episode_number += 1
+            # once the round is done, compile all the observations and gradients
+            episode_hidden_layer_values = np.vstack(episode_hidden_layer_values)
+            episode_observations = np.vstack(episode_observations)
+            episode_gradient_log_ps = np.vstack(episode_gradient_log_ps)
+            episode_rewards = np.vstack(episode_rewards)
+
+            # Tweak the gradient of the log_ps based on the discounted rewards
+            # this puts less weight on actions taken at the beginning of the game vs the end
+            episode_gradient_log_ps_discounted = discount_with_rewards(episode_gradient_log_ps, episode_rewards, gamma)
+            gradient = compute_gradient(
+                episode_gradient_log_ps_discounted,
+                episode_hidden_layer_values,
+                episode_observations,
+                weights
+            )
+
+            # Sum the gradient for use when we hit the batch size
+            for layer_name in gradient:
+                g_dict[layer_name] += gradient[layer_name]
+
+            if episode_number % batch_size == 0:
+                update_weights(weights, expectation_g_squared, g_dict, decay_rate, learning_rate)
+
+            episode_hidden_layer_values, episode_observations, episode_gradient_log_ps, episode_rewards = [], [], [], [] # reset values
+            observation = env.reset() # reset env
+            running_reward = reward_sum if running_reward is None else running_reward * 0.99 + reward_sum * 0.01
+            print (f'resetting env. episode reward total was {reward_sum}. running mean: {running_reward}')
+            print(episode_number)
+            reward_sum = 0
+            prev_processed_observations = None
+
+main()
