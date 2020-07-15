@@ -76,10 +76,16 @@ def apply_neural_nets(observation_matrix, weights):
     return hidden_layer_values, output_layer_values
 
 
+'''
+Our goal is to find ∂C/∂w1 (BP4), the derivative of the cost function with
+respect to the first layer’s weights, and ∂C/∂w2, the derivative of the
+cost function with respect to the second layer’s weights. These gradients
+will help us understand what direction to move our weights in for the greatest improvement.
+'''
+
+
 # compute gradient for backpropogation
-# my math is a bit rusty, so tbh i don't fully understand why these computations will work for us
 def compute_gradient(gradient_log_p, hidden_layer_values, observation_values, weights):
-    """ See here: http://neuralnetworksanddeeplearning.com/chap2.html"""
     delta_L = gradient_log_p
     dC_dw2 = np.dot(hidden_layer_values.T, delta_L).ravel()
     delta_l2 = np.outer(delta_L, weights['2'])
@@ -93,13 +99,13 @@ def compute_gradient(gradient_log_p, hidden_layer_values, observation_values, we
 
 # apply RMSProp, an algorithm for updating weights
 def update_weights(weights, expectation_g_squared, g_dict, decay_rate, learning_rate):
-    """ See here: http://sebastianruder.com/optimizing-gradient-descent/index.html#rmsprop"""
     epsilon = 1e-5
     for layer_name in weights.keys():
         g = g_dict[layer_name]
         expectation_g_squared[layer_name] = decay_rate * expectation_g_squared[layer_name] + (1 - decay_rate) * g**2
         weights[layer_name] += (learning_rate * g)/(np.sqrt(expectation_g_squared[layer_name] + epsilon))
-        g_dict[layer_name] = np.zeros_like(weights[layer_name]) # reset batch gradient buffer
+        g_dict[layer_name] = np.zeros_like(weights[layer_name])  # reset batch gradient buffer
+
 
 # actions taken later in the game carry more weight
 def discount_rewards(rewards, gamma):
@@ -109,7 +115,7 @@ def discount_rewards(rewards, gamma):
     running_add = 0
     for t in reversed(range(0, rewards.size)):
         if rewards[t] != 0:
-            running_add = 0 # reset the sum, since this was a game boundary (pong specific!)
+            running_add = 0  # reset the sum, since this was a game boundary (pong specific!)
         running_add = running_add * gamma + rewards[t]
         discounted_rewards[t] = running_add
     return discounted_rewards
