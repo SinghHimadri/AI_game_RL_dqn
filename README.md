@@ -41,3 +41,7 @@ I never really branched out in my ML projects beyond plugging in some SciKitLear
 
 * [Deep Q Learning Article](https://keon.github.io/deep-q-learning/)
 * [Reinforcement Learning for Atari Pong Article](https://medium.com/@dhruvp/how-to-write-a-neural-network-to-play-pong-from-scratch-956b57d4f6e0)
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE.md](https://github.com/SinghHimadri/AI_game_RL_dqn/blob/master/LICENSE) file for details.
